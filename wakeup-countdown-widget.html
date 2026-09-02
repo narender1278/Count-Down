@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wake Up Countdown</title>
+<style>
+  :root{
+    --paper: #0a0908;
+    --ink: #f2ece2;
+    --ink-dim: rgba(242,236,226,0.6);
+    --alarm: #ff2b2b;
+    --alarm-dim: rgba(255,43,43,0.35);
+    --caution: #f5b400;
+    --hazard-dark: #17130f;
+    --pulse-speed: 3.4s;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    height: 100%;
+    margin: 0;
+  }
+
+  body{
+    font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--ink);
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(14px, 4vw, 40px);
+    position: relative;
+    overflow: hidden;
+
+    background-image:
+      linear-gradient(180deg, rgba(6,4,4,0.72) 0%, rgba(4,2,2,0.92) 100%),
+      url('https://images.unsplash.com/photo-1752503650851-cbc3f8b00679?fm=jpg&q=70&w=1600&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* pulsing red vignette — always present, intensifies as deadline approaches */
+  body::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 0 var(--alarm-dim);
+    animation: vignette var(--pulse-speed) ease-in-out infinite;
+    z-index: 0;
+  }
+
+  @keyframes vignette{
+    0%, 100% { box-shadow: inset 0 0 60px 0px var(--alarm-dim); }
+    50%      { box-shadow: inset 0 0 140px 30px var(--alarm-dim); }
+  }
+
+  .frame{
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .hazard-strip{
+    height: 10px;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--caution) 0, var(--caution) 14px,
+      var(--hazard-dark) 14px, var(--hazard-dark) 28px
+    );
+  }
+
+  .card{
+    text-align: center;
+    padding: clamp(22px, 5vw, 44px) clamp(18px, 5vw, 36px);
+    background: rgba(10,9,8,0.55);
+    border-left: 3px solid var(--alarm);
+    border-right: 3px solid var(--alarm);
+    animation: border-pulse var(--pulse-speed) ease-in-out infinite;
+    backdrop-filter: blur(2px);
+  }
+
+  @keyframes border-pulse{
+    0%, 100% { box-shadow: 0 0 0px 0px var(--alarm-dim); }
+    50%      { box-shadow: 0 0 34px 4px var(--alarm-dim); }
+  }
+
+  .tag{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(0.7rem, 1.6vw, 0.82rem);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--alarm);
+    margin: 0 0 clamp(14px, 4vw, 22px);
+    padding: 4px 10px;
+    border: 1px solid var(--alarm);
+  }
+
+  .clock{
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: clamp(10px, 4vw, 26px);
+    margin: 0;
+  }
+
+  .unit{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 2.4em;
+  }
+
+  .unit-value{
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(2.2rem, 10vw, 4.4rem);
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: var(--alarm);
+    animation: number-pulse var(--pulse-speed) ease-in-out infinite;
+  }
+
+  @keyframes number-pulse{
+    0%, 100% { text-shadow: 0 0 6px rgba(255,43,43,0.25); }
+    50%      { text-shadow: 0 0 30px rgba(255,43,43,0.9); }
+  }
+
+  .unit-label{
+    margin-top: 6px;
+    font-size: clamp(0.62rem, 1.8vw, 0.76rem);
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    font-weight: 700;
+  }
+
+  .message{
+    margin-top: clamp(14px, 4vw, 24px);
+    font-size: clamp(1.05rem, 3.2vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    min-height: 1.6em;
+  }
+
+  .message.critical{
+    color: var(--alarm);
+    animation: text-flash 0.6s steps(2, start) infinite;
+  }
+
+  @keyframes text-flash{
+    50% { opacity: 0.35; }
+  }
+
+  .bar-track{
+    margin-top: clamp(16px, 5vw, 28px);
+    height: 4px;
+    width: 100%;
+    background: rgba(242,236,226,0.15);
+    overflow: hidden;
+  }
+
+  .bar-fill{
+    height: 100%;
+    width: 100%;
+    background: var(--alarm);
+    transform-origin: left;
+  }
+
+  @media (max-width: 340px){
+    .card{ padding: 18px 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    body::before, .card, .unit-value, .message.critical{ animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="hazard-strip"></div>
+    <div class="card">
+      <span class="tag">⚠ DEADLINE — DEC 31</span>
+      <div class="clock">
+        <div class="unit">
+          <span class="unit-value" id="months">0</span>
+          <span class="unit-label">MONTHS</span>
+        </div>
+        <div class="unit">
+          <span class="unit-value" id="days">0</span>
+          <span class="unit-label">DAYS</span>
+        </div>
+        <div class="unit">
+          <span class="unit-value" id="hours">0</span>
+          <span class="unit-label">HOURS</span>
+        </div>
+      </div>
+      <p class="message" id="message">GET UP. GET MOVING.</p>
+      <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+    </div>
+    <div class="hazard-strip"></div>
+  </div>
+
+<script>
+  /* ============ SETTINGS ============
+     TARGET is the deadline. It defaults to Dec 31 of the current year
+     at 23:59:59. Change the year/time below if you need a different one. */
+  const now0 = new Date();
+  const TARGET_YEAR = now0.getMonth() === 11 && now0.getDate() > 31 ? now0.getFullYear() + 1 : now0.getFullYear();
+  const TARGET = new Date(TARGET_YEAR, 11, 31, 23, 59, 59);
+  const START = new Date(TARGET_YEAR, 0, 1, 0, 0, 0);
+
+  const monthsEl = document.getElementById('months');
+  const daysEl = document.getElementById('days');
+  const hoursEl = document.getElementById('hours');
+  const msgEl = document.getElementById('message');
+  const barEl = document.getElementById('bar');
+
+  function addMonths(date, n){
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + n);
+    return d;
+  }
+
+  function breakdown(now, target){
+    if (target <= now) return { months: 0, days: 0, hours: 0, done: true };
+    let months = 0;
+    let cursor = new Date(now);
+    while (addMonths(cursor, 1) <= target){ cursor = addMonths(cursor, 1); months++; }
+    let days = 0;
+    while (new Date(cursor.getTime() + 86400000) <= target){ cursor = new Date(cursor.getTime() + 86400000); days++; }
+    const hours = Math.floor((target - cursor) / 3600000);
+    return { months, days, hours, done: false };
+  }
+
+  const messages = [
+    { above: 0.5,  text: "NO MORE EXCUSES. START NOW." },
+    { above: 0.2,  text: "TIME IS SLIPPING. MOVE." },
+    { above: 0.05, text: "THIS IS IT. NO MORE WAITING." },
+    { above: 0,    text: "NO TIME LEFT. WAKE UP." }
+  ];
+
+  function render(){
+    const now = new Date();
+    const { months, days, hours, done } = breakdown(now, TARGET);
+
+    monthsEl.textContent = months;
+    daysEl.textContent = days;
+    hoursEl.textContent = hours;
+
+    const totalSpan = TARGET - START;
+    const remaining = Math.max(0, TARGET - now);
+    const ratio = totalSpan > 0 ? remaining / totalSpan : 0;
+    barEl.style.transform = `scaleX(${ratio})`;
+
+    const state = done ? messages[messages.length - 1] : (messages.find(m => ratio > m.above) || messages[messages.length - 1]);
+    msgEl.textContent = state.text;
+
+    const critical = done || ratio <= 0.05;
+    msgEl.classList.toggle('critical', critical);
+
+    /* the alarm pulse gets faster the closer the deadline gets — 3.4s down to 0.9s */
+    const speed = 0.9 + ratio * 2.5;
+    document.documentElement.style.setProperty('--pulse-speed', speed.toFixed(2) + 's');
+  }
+
+  render();
+  setInterval(render, 1000 * 60);
+</script>
+
+</body>
+</html>
